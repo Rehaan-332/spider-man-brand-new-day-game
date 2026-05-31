@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raimi-Verse Hero Dashboard</title>
+    <style>
+        :root {
+            --raimi-crimson: #900C3F;
+            --raimi-navy: #1F3A60;
+            --raimi-dark: #07090e;
+            --raimi-silver: #D1D5DB;
+            --raimi-gold: #D4AF37;
+        }
+
+        body {
+            background-color: var(--raimi-dark);
+            color: #FFFFFF;
+            font-family: 'Georgia', serif; /* Retro early-2000s cinematic aesthetic */
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Moving Canvas Web Background - Designed like the classic 2002/2004 intro credits */
+        #webCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: radial-gradient(circle, #101726 0%, #05070a 100%);
+        }
+
+        .container {
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 1;
+            position: relative;
+        }
+
+        h1 {
+            color: var(--raimi-crimson);
+            font-size: 3.5rem;
+            font-family: 'Impact', Arial, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin: 0 0 5px 0;
+            /* Silver raised webbing text effect */
+            text-shadow: 2px 2px 0px var(--raimi-silver), -2px -2px 0px #000, 4px 4px 10px rgba(0,0,0,0.9);
+        }
+
+        .tagline {
+            font-family: 'Arial', sans-serif;
+            font-size: 1rem;
+            color: var(--raimi-silver);
+            margin-bottom: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .grid-layout {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero-card {
+            background: rgba(12, 17, 27, 0.95);
+            border: 3px solid var(--raimi-navy);
+            border-radius: 4px; /* Harder corners matching early 2000s style */
+            flex: 1;
+            min-width: 340px;
+            max-width: 380px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(31, 58, 96, 0.5);
+            backdrop-filter: blur(5px);
+            box-sizing: border-box;
+        }
+
+        .hero-card.crimson-trim { 
+            border-color: var(--raimi-crimson); 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(144, 12, 63, 0.4);
+        }
+        .hero-card.gold-trim { 
+            border-color: var(--raimi-gold); 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        h2 {
+            font-family: 'Impact', Arial, sans-serif;
+            font-size: 1.8rem;
+            margin-top: 0;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--raimi-silver);
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            color: var(--raimi-silver);
+        }
+
+        .stat-display {
+            font-size: 1.1rem;
+            color: var(--raimi-gold);
+            margin-bottom: 15px;
+            background: #090d14;
+            padding: 8px;
+            border: 1px solid #222;
+            display: flex;
+            justify-content: space-around;
+            font-weight: bold;
+        }
+
+        .shop-item {
+            background: #0f1420;
+            border: 1px solid #2d3748;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+        }
+
+        .item-info { font-family: 'Arial', sans-serif; }
+        .item-name { font-family: 'Georgia', serif; font-size: 1.05rem; font-weight: bold; }
+        .item-cost { color: var(--raimi-gold); font-size: 0.85rem; margin-top: 2px;}
+
+        .btn {
+            background-color: var(--raimi-navy);
+            color: white;
+            border: 1px solid var(--raimi-silver);
+            padding: 8px 14px;
+            font-size: 0.9rem;
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover:not(:disabled) { background-color: var(--raimi-crimson); color: #FFF; }
+        .btn:disabled { background-color: #222; border-color: #444; color: #666; cursor: not-allowed; }
+
+        .inventory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        
+        .inventory-slot {
+            background: #090d14;
+            border: 2px solid #222;
+            padding: 10px;
+            font-family: 'Arial', sans-serif;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .inventory-slot.unlocked { border-color: var(--raimi-silver); background: #131a26; }
+        .inventory-slot.active-ammo { border-color: var(--raimi-crimson); box-shadow: inset 0 0 10px rgba(144,12,63,0.6); }
+        .slot-title { font-family: 'Georgia', serif; font-size: 1rem; font-weight: bold; }
+        .slot-count { font-size: 1.1rem; color: var(--raimi-silver); font-weight: bold; margin-top: 4px; }
+
+        /* Classic Movie Villain Threat Board */
+        .mission-box {
+            background: #0f1420;
+            border: 1px solid #2d3748;
+            padding: 12px;
+            margin-bottom: 12px;
+            text-align: left;
+            font-family: 'Arial', sans-serif;
+        }
+        .mission-title { font-family: 'Georgia', serif; font-size: 1.15rem; font-weight: bold; color: #FF4136; }
+        .mission-desc { font-size: 0.85rem; margin: 6px 0; color: #BBB; line-height: 1.3; }
+        .mission-reward { color: var(--raimi-gold); font-weight: bold; font-size: 0.85rem; }
+
+        #log-zone {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #11FF11; /* Classic radar/computer look */
+            margin-top: 15px;
+            background: #000;
+            border: 1px solid #222;
+            padding: 10px;
+            min-height: 35px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="webCanvas"></canvas>
+
+       <div class="container">
+        <h1>Spider-Man</h1>
+        <!-- REPLACE THE OLD TAGLINE LINE WITH THIS SNIPPET: -->
+        <p class="tagline">Organic Webbing & NYC Defender Console<br><span style="font-size: 0.8rem; letter-spacing: 1px; color: var(--raimi-gold);">Made by Rehaan Thakkar and his company Nexus Agency</span></p>
+
+        <div class="grid-layout">
+
+            <!-- Unit 1: Organic Web Genetics & Training -->
+            <div class="hero-card crimson-trim">
+                <h2>Organic Mutation Lab</h2>
+                <div class="stat-display">
+                    <div>🩸 Willpower: <span id="token-count">50</span></div>
+                    <div>🕸️ Strain: <span id="cap-display">5/10</span></div>
+                </div>
+                <div id="shop-container"></div>
+                <button class="btn" style="width: 100%; margin-top: 5px;" onclick="upgradeStorage()">
+                    🧬 Mutate DNA (Expand Strain Cap: 40)
+                </button>
+            </div>
+
+            <!-- Unit 2: Organic Web Matrix & Combat Execution -->
+            <div class="hero-card">
+                <h2>Web Fluid Output</h2>
+                <p style="font-family: Arial, sans-serif; font-size: 0.85rem; margin-top:-5px; color:#AAA;">
+                    Select an unlocked structural biological web compound to weave.
+                </p>
+                <div class="inventory-grid" id="inventory-container"></div>
+                <button class="btn" style="width: 100%; margin-top: 15px; background:var(--raimi-crimson); border-color:var(--raimi-silver);" onclick="fireActiveWeb()">
+                    🕸️ THWIP! Shoot Organic Webbing
+                </button>
+            </div>
+
+            <!-- Unit 3: Raimi Trilogy Threat Matrix -->
+            <div class="hero-card gold-trim">
+                <h2>NYC Threat Level</h2>
+                <div id="mission-board"></div>
+                <button class="btn" style="width: 100%; background:#111; border-color:var(--raimi-gold); color:var(--raimi-gold);" onclick="generateNewMissions()">
+                    📰 Read Daily Bugle Headlines
+                </button>
+            </div>
+
+        </div>
+
+        <div style="max-width: 1180px; margin: 20px auto 0 auto;">
+            <div id="log-zone">[SYSTEM]: Peter Parker operational. "With great power comes great responsibility."</div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. RAIMI CINEMATIC INTRO WEB BACKGROUND ENGINE ---
+        var canvas = document.getElementById("webCanvas");
+        var ctx = canvas.getContext("2d");
+        var lines = [];
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; generateWebLines(); }
+        function generateWebLines() {
+            lines = [];
+            // Generates complex, structured interconnectivity resembling the classic 2002 title screens
+            var nodesCount = Math.floor((canvas.width + canvas.height) / 20);
+            for(var i = 0; i < nodesCount; i++) {
+                lines.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.8, vy: (Math.random() - 0.5) * 0.8 });
+            }
+        }
+        function drawWebs() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "rgba(209, 213, 219, 0.12)"; ctx.lineWidth = 1.2;
+            for(var i=0; i<lines.length; i++) {
+                var p1 = lines[i]; p1.x += p1.vx; p1.y += p1.vy;
+                if(p1.x < 0 || p1.x > canvas.width) p1.vx *= -1;
+                if(p1.y < 0 || p1.y > canvas.height) p1.vy *= -1;
+                for(var j=i+1; j<lines.length; j++) {
+                    var p2 = lines[j]; var dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                    if(dist < 150) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+                }
+            }
+            requestAnimationFrame(drawWebs);
+        }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas(); requestAnimationFrame(drawWebs);
+
+        // --- 2. RETRO SOUND EMULATION ENGINE ---
+        function playSound(type) {
+            try {
+                var AudioContext = window.AudioContext || window.webkitAudioContext; var audioCtx = new AudioContext();
+                var osc = audioCtx.createOscillator(); var gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                if (type === 'thwip') {
+                    // Crisp organic whip whistle punch
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(750, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.14);
+                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.14);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.14);
+                } else if (type === 'buy') {
+                    // Deep harmonic chord for biological mutation step
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.18);
+                } else if (type === 'empty') {
+                    // Wrist stress click for when Peter loses his organic webs ("Existential crisis!")
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+                }
+            } catch(e){}
+        }
+
+        // --- 3. TOBEY MAGUIRE STORYLINE ENGINE VARIATION ---
+        var tokens = 50; // Willpower
+        var maxCapacity = 10; // Genetic Strain Limit
+        var storageUpgradeCost = 40;
+        var activeAmmoId = "std";
+
+        var upgradeShop = [
+            { id: "std", name: "Standard Organic Web", cost: 10, count: 3, unlocked: true, icon: "🕸️" },
+            { id: "heavy", name: "Impact Web Shield", cost: 25, count: 0, unlocked: false, icon: "🛡️" },
+            { id: "train", name: "Train-Stopping Tether", cost: 35, count: 0, unlocked: false, icon: "🚇" },
+            { id: "symb", name: "Symbiote Rage Thread", cost: 50, count: 0, unlocked: false, icon: "🕷️" }
+        ];
+
+        var structuralMissions = [
+            { t: "Green Goblin Festival Attack", d: "Save MJ from the collapsing balcony at Times Square.", r: 25, m: "std" },
+            { t: "Doc Ock Clock Tower Clash", d: "Block heavy fusion power shrapnel from smashing bystanders.", r: 40, m: "heavy" },
+            { t: "Out-of-Control Subway Train", d: "Weave massive array nets to halt a runaway train! 'Any more bright ideas?'", r: 60, m: "train" },
+            { t: "Sandman & Venom Finale", d: "Confront the giant sand matrix construction site threat with maximum power.", r: 80, m: "symb" }
+        ];
+
+        var dynamicActiveMissions = [];
+
+        function getTotalCartridgeCount() { return upgradeShop.reduce((sum, item) => sum + item.count, 0); }
+
+        // --- 4. DATA SYNCHRONIZATION RUNTIME ---
+        function renderAll() {
+            document.getElementById("token-count").innerText = tokens;
+            document.getElementById("cap-display").innerText = getTotalCartridgeCount() + "/" + maxCapacity;
+            
+            // Render Biological Synthesis Panel
+            var shopBox = document.getElementById("shop-container"); shopBox.innerHTML = "";
+            upgradeShop.forEach((item, idx) => {
+                var div = document.createElement("div"); div.className = "shop-item";
+                var label = item.unlocked ? "Weave Web" : "Mutate DNA";
+                var disabledStr = (tokens < item.cost || (item.unlocked && getTotalCartridgeCount() >= maxCapacity)) ? 'disabled' : '';
+                div.innerHTML = `<div class="item-info"><div class="item-name">${item.icon} ${item.name}</div><div class="item-cost">Willpower Cost: ${item.cost}</div></div>
+                                 <button class="btn" ${disabledStr} onclick="purchaseUpgrade(${idx})">${label}</button>`;
+                shopBox.appendChild(div);
+            });
+
+            // Render Output Node Trays
+            var invBox = document.getElementById("inventory-container"); invBox.innerHTML = "";
+            upgradeShop.forEach((item) => {
+                var div = document.createElement("div");
+                div.className = "inventory-slot " + (item.unlocked ? "unlocked " : "") + (activeAmmoId === item.id ? "active-ammo" : "");
+                if (item.unlocked) {
+                    div.innerHTML = `<div class="slot-title">${item.icon} ${item.name}</div><div class="slot-count">${item.count} Units Bound</div>`;
+                    div.onclick = () => { activeAmmoId = item.id; playSound('buy'); writeLog(`Chambered biological output: ${item.name}`); renderAll(); };
+                } else {
+                    div.innerHTML = `<div class="slot-title" style="color: #444;">🔒 Latent DNA</div><div style="font-size:0.75rem; color:#555;">Mutate genetic sequence</div>`;
+                }
+                invBox.appendChild(div);
+            });
+
+            // Render Daily Bugle Threat Headlines
+            var mBox = document.getElementById("mission-board"); mBox.innerHTML = "";
+            dynamicActiveMissions.forEach((m, idx) => {
+                var div = document.createElement("div"); div.className = "mission-box";
+                div.innerHTML = `<div class="mission-title">DAILY BUGLE: ${m.t}</div><div class="mission-desc">${m.d}</div>
+                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                                    <span class="mission-reward">Focus Gain: +${m.r} Willpower</span>
+                                    <button class="btn" style="border-color:var(--raimi-gold);" onclick="deployMission(${idx})">Go Spidey Go!</button>
+                                 </div>`;
+                mBox.appendChild(div);
+            });
+        }
+
+        function purchaseUpgrade(idx) {
+            var item = upgradeShop[idx];
+            if (!item.unlocked && tokens >= item.cost) {
+                tokens -= item.cost; item.unlocked = true; item.count = 1;
+                item.cost = Math.floor(item.cost * 1.3); playSound('buy');
+                writeLog(`Genetic alteration complete. New capability unlocked: ${item.name}`);
+            } else if (item.unlocked && tokens >= item.cost && getTotalCartridgeCount() < maxCapacity) {
+                tokens -= item.cost; item.count++;
+                item.cost = Math.floor(item.cost * 1.25); playSound('buy');
+                writeLog(`Generated additional internal stores of: ${item.name}`);
+            }
+            renderAll();
+        }
+
+        function upgradeStorage() {
+            if (tokens >= storageUpgradeCost) {
+                tokens -= storageUpgradeCost; maxCapacity += 5;
+                storageUpgradeCost = Math.floor(storageUpgradeCost * 1.4);
+                playSound('buy'); writeLog(`DNA altered successfully! Structural organic web gland capacity increased to ${maxCapacity}.`);
+                renderAll();
+            } else { writeLog("[WARNING]: Emotional state compromised. Insufficient Willpower to push mutation."); }
+        }
+
+        function fireActiveWeb() {
+            var activeItem = upgradeShop.find(i => i.id === activeAmmoId);
+            if (activeItem && activeItem.count > 0) {
+                activeItem.count--; playSound('thwip');
+                writeLog(`[ACTION]: THWIP! Shot natural ${activeItem.name} lines. "Go web go!"`);
+                renderAll();
+            } else { 
+                playSound('empty'); 
+                writeLog(`[ERROR]: "My web-shooters... wait, they're organic!" Stress / crisis of confidence caused a temporary loss of powers!`); 
+            }
+        }
+
+        function generateNewMissions() {
+            dynamicActiveMissions = [];
+            let shuffled = [...structuralMissions].sort(() => 0.5 - Math.random());
+            dynamicActiveMissions.push(shuffled[0], shuffled[1]);
+            playSound('buy'); writeLog("[NEWS]: J. Jonah Jameson demands photos! Check out the current city emergencies.");
+            renderAll();
+        }
+
+        function deployMission(idx) {
+            var mission = dynamicActiveMissions[idx];
+            var correspondingItem = upgradeShop.find(i => i.id === mission.m);
+            
+            if (!correspondingItem || !correspondingItem.unlocked) {
+                writeLog(`[CRISIS]: You aren't strong enough yet! Mutate your DNA to unlock ${mission.m.toUpperCase()} traits to face this villain.`);
+                return;
+            }
+            if (correspondingItem.count <= 0) {
+                writeLog(`[FAILURE]: Out of biological energy! Rest or generate more ${correspondingItem.name} units before attempting.`);
+                return;
+            }
+
+            correspondingItem.count--;
+            tokens += mission.r;
+            playSound('thwip');
+            writeLog(`[VICTORY]: Heroic save! Neutralized ${mission.t}. "Gotta slide, Mr. Jameson's waiting!" Gained +${mission.r} Willpower.`);
+            dynamicActiveMissions.splice(idx, 1);
+            renderAll();
+        }
+
+        function writeLog(text) { document.getElementById("log-zone").innerText = text; }
+
+        // Start Up Simulation Loops
+        generateNewMissions();
+    </script>
+</body>
+</html>
